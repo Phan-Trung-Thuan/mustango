@@ -182,12 +182,23 @@ class Mustango:
             main_config["scheduler_name"], subfolder="scheduler"
         )
 
-    def generate(self, prompt, steps=100, guidance=3, samples=1, disable_progress=True):
+    def generate(
+        self, 
+        prompt, 
+        steps=100,
+        guidance=3, 
+        samples=1, 
+        disable_progress=True, 
+        return_latent_t_dict=False, 
+        leading_latents=None, 
+        clip_ratio=0.375,
+        tail_ratio=0.125,
+    ):
         """Genrate music for a single prompt string."""
 
         with torch.no_grad():
             beats, chords, chords_times = self.music_model.generate(prompt)
-            latents = self.model.inference(
+            latents, latent_t_dict = self.model.inference(
                 [prompt],
                 beats,
                 [chords],
@@ -197,8 +208,47 @@ class Mustango:
                 guidance,
                 samples,
                 disable_progress,
+                leading_latents=leading_latents,
+                clip_ratio=clip_ratio,
             )
             mel = self.vae.decode_first_stage(latents)
             wave = self.vae.decode_to_waveform(mel)
 
-        return wave[0]
+        return wave[0], latent_t_dict if return_latent_t_dict else wave[0]
+    
+    def generate_longer(self, prompt, n_secs, include_ending=True, return_slices=True):
+        # step.1 compute length
+        DEFAULT_LENGTH = 10  # do NOT change, original generated length.
+        SLICE_GEN_LENGTH = 5  # may not change (requires corresponded modification to `clip_ratio`)
+        DROP_TAIL = 1 / 8  # may not change (requires corresponded modification to `tail_ratio`)
+        
+        n_full_length_runs = (n_secs - DEFAULT_LENGTH) // SLICE_GEN_LENGTH + 1
+        total_diff = n_secs - (n_full_length_runs - 1) * SLICE_GEN_LENGTH - 10
+        _clip_ratio = None
+        if total_diff > 1:
+            _clip_ratio = (DEFAULT_LENGTH - total_diff) / DEFAULT_LENGTH - DROP_TAIL
+
+        # step.2 coherent gen
+        music, leading_latents = self.generate(prompt=prompt, leading_latents=None)
+        musics = [music[:len(music) // DEFAULT_LENGTH * SLICE_GEN_LENGTH]]
+        for i in range(n_full_length_runs - 1):            
+            if i < n_full_length_runs - 2:
+                music, leading_latents = self.generate(prompt=prompt, leading_latents=leading_latents)
+                musics.append(music[:len(music) // DEFAULT_LENGTH * SLICE_GEN_LENGTH])
+            else:
+                if _clip_ratio is None:
+                    prompt = 'An ending part of music.' + prompt
+                    music, leading_latents = self.generate(prompt=prompt, leading_latents=leading_latents)
+                    musics.append(music)
+                else:
+                    music, leading_latents = self.generate(
+                        prompt=prompt, leading_latents=leading_latents, clip_ratio=_clip_ratio)
+                    musics.append(music[:int(len(music) * total_diff / DEFAULT_LENGTH)])
+        
+        if _clip_ratio is not None:
+            if include_ending:
+                prompt = 'An ending part of music.' + prompt
+            music, _ = self.generate(prompt=prompt, leading_latents=leading_latents)
+            musics.append(music)
+            
+        return np.concatenate(musics), musics if return_slices else np.concatenate(musics)

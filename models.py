@@ -25,8 +25,9 @@ from diffusers import DDPMScheduler, UNet2DConditionModel, UNet2DConditionModelM
 from diffusers import AutoencoderKL as DiffuserAutoencoderKL
 from layers.layers import chord_tokenizer, beat_tokenizer, Chord_Embedding, Beat_Embedding, Music_PositionalEncoding, Fundamental_Music_Embedding
 
+
 def build_pretrained_models(name):
-	
+
 	ckpt_path = get_metadata()[name]["path"]
 	if not os.path.exists(ckpt_path):
 		download_checkpoint(name)
@@ -187,15 +188,13 @@ class AudioDiffusion(nn.Module):
 
 		if self.set_from == "random":
 			model_pred = self.unet(
-				noisy_latents, timesteps, encoder_hidden_states, 
-				encoder_attention_mask=boolean_encoder_mask
+				noisy_latents, timesteps, encoder_hidden_states, encoder_attention_mask=boolean_encoder_mask
 			).sample
 
 		elif self.set_from == "pre-trained":
 			compressed_latents = self.group_in(noisy_latents.permute(0, 2, 3, 1).contiguous()).permute(0, 3, 1, 2).contiguous()
 			model_pred = self.unet(
-				compressed_latents, timesteps, encoder_hidden_states, 
-				encoder_attention_mask=boolean_encoder_mask
+				compressed_latents, timesteps, encoder_hidden_states, encoder_attention_mask=boolean_encoder_mask
 			).sample
 			model_pred = self.group_out(model_pred.permute(0, 2, 3, 1).contiguous()).permute(0, 3, 1, 2).contiguous()
 
@@ -215,8 +214,7 @@ class AudioDiffusion(nn.Module):
 		return loss
 
 	@torch.no_grad()
-	def inference(self, prompt, inference_scheduler, num_steps=20, guidance_scale=3, num_samples_per_prompt=1, 
-					disable_progress=True):
+	def inference(self, prompt, inference_scheduler, num_steps=20, guidance_scale=3, num_samples_per_prompt=1, disable_progress=True):
 		device = self.text_encoder.device
 		classifier_free_guidance = guidance_scale > 1.0
 		batch_size = len(prompt) * num_samples_per_prompt
@@ -232,7 +230,8 @@ class AudioDiffusion(nn.Module):
 		timesteps = inference_scheduler.timesteps
 
 		num_channels_latents = self.unet.in_channels
-		latents = self.prepare_latents(batch_size, inference_scheduler, num_channels_latents, prompt_embeds.dtype, device)
+		latents = self.prepare_latents(
+		    batch_size, inference_scheduler, num_channels_latents, prompt_embeds.dtype, device)
 
 		num_warmup_steps = len(timesteps) - num_steps * inference_scheduler.order
 		progress_bar = tqdm(range(num_steps), disable=disable_progress)
@@ -281,7 +280,7 @@ class AudioDiffusion(nn.Module):
 			prompt_embeds = self.text_encoder(
 				input_ids=input_ids, attention_mask=attention_mask
 			)[0]
-				
+
 		prompt_embeds = prompt_embeds.repeat_interleave(num_samples_per_prompt, 0)
 		attention_mask = attention_mask.repeat_interleave(num_samples_per_prompt, 0)
 
@@ -299,7 +298,7 @@ class AudioDiffusion(nn.Module):
 			negative_prompt_embeds = self.text_encoder(
 				input_ids=uncond_input_ids, attention_mask=uncond_attention_mask
 			)[0]
-				
+
 		negative_prompt_embeds = negative_prompt_embeds.repeat_interleave(num_samples_per_prompt, 0)
 		uncond_attention_mask = uncond_attention_mask.repeat_interleave(num_samples_per_prompt, 0)
 
@@ -310,7 +309,7 @@ class AudioDiffusion(nn.Module):
 		boolean_prompt_mask = (prompt_mask == 1).to(device)
 
 		return prompt_embeds, boolean_prompt_mask
-	
+
 
 class MusicAudioDiffusion(nn.Module):
 	def __init__(
@@ -323,23 +322,23 @@ class MusicAudioDiffusion(nn.Module):
 		freeze_text_encoder=True,
 		uncondition=False,
 
-		d_fme = 1024,  #FME
-		fme_type = "se", 
-		base = 1, 
-		if_trainable = True, 
-		translation_bias_type = "nd",
-		emb_nn = True,
-		d_pe = 1024, #PE
-		if_index = True, 
-		if_global_timing = True,
-		if_modulo_timing = False,
-		d_beat = 1024, #Beat
-		d_oh_beat_type = 7, 
-		beat_len = 50,
-		d_chord = 1024, #Chord
-		d_oh_chord_type = 12,
-		d_oh_inv_type = 4,
-		chord_len = 20,
+		d_fme=1024,  # FME
+		fme_type="se",
+		base=1,
+		if_trainable=True,
+		translation_bias_type="nd",
+		emb_nn=True,
+		d_pe=1024,  # PE
+		if_index=True,
+		if_global_timing=True,
+		if_modulo_timing=False,
+		d_beat=1024,  # Beat
+		d_oh_beat_type=7,
+		beat_len=50,
+		d_chord=1024,  # Chord
+		d_oh_chord_type=12,
+		d_oh_inv_type=4,
+		chord_len=20,
 
 	):
 		super().__init__()
@@ -381,15 +380,16 @@ class MusicAudioDiffusion(nn.Module):
 			self.text_encoder = AutoModel.from_pretrained(self.text_encoder_name)
 
 		self.device = self.text_encoder.device
-		#Music Feature Encoder
-		self.FME = Fundamental_Music_Embedding(d_model = d_fme, base= base, if_trainable = False, type = fme_type,emb_nn=emb_nn,translation_bias_type = translation_bias_type)
-		self.PE = Music_PositionalEncoding(d_model = d_pe, if_index = if_index, if_global_timing = if_global_timing, if_modulo_timing = if_modulo_timing, device = self.device)
+		# Music Feature Encoder
+		self.FME = Fundamental_Music_Embedding(d_model=d_fme, base=base, if_trainable=False,
+		                                       type=fme_type, emb_nn=emb_nn, translation_bias_type=translation_bias_type)
+		self.PE = Music_PositionalEncoding(
+		    d_model=d_pe, if_index=if_index, if_global_timing=if_global_timing, if_modulo_timing=if_modulo_timing, device=self.device)
 		# self.PE2 = Music_PositionalEncoding(d_model = d_pe, if_index = if_index, if_global_timing = if_global_timing, if_modulo_timing = if_modulo_timing, device = self.device)
-		self.beat_tokenizer = beat_tokenizer(seq_len_beat=beat_len, if_pad = True)
-		self.beat_embedding_layer = Beat_Embedding(self.PE, d_model = d_beat, d_oh_beat_type = d_oh_beat_type)
-		self.chord_embedding_layer = Chord_Embedding(self.FME, self.PE, d_model = d_chord, d_oh_type = d_oh_chord_type, d_oh_inv = d_oh_inv_type)
-		self.chord_tokenizer = chord_tokenizer(seq_len_chord=chord_len, if_pad = True)
-
+		self.beat_tokenizer = beat_tokenizer(seq_len_beat=beat_len, if_pad=True)
+		self.beat_embedding_layer = Beat_Embedding(self.PE, d_model=d_beat, d_oh_beat_type=d_oh_beat_type)
+		self.chord_embedding_layer = Chord_Embedding(self.FME, self.PE, d_model=d_chord, d_oh_type=d_oh_chord_type, d_oh_inv=d_oh_inv_type)
+		self.chord_tokenizer = chord_tokenizer(seq_len_chord=chord_len, if_pad=True)
 
 	def compute_snr(self, timesteps):
 		"""
@@ -420,65 +420,65 @@ class MusicAudioDiffusion(nn.Module):
 		batch = self.tokenizer(
 			prompt, max_length=self.tokenizer.model_max_length, padding=True, truncation=True, return_tensors="pt"
 		)
-		input_ids, attention_mask = batch.input_ids.to(device), batch.attention_mask.to(device) #cuda
+		input_ids, attention_mask = batch.input_ids.to(device), batch.attention_mask.to(device)  # cuda
 		if self.freeze_text_encoder:
 			with torch.no_grad():
 				encoder_hidden_states = self.text_encoder(
 					input_ids=input_ids, attention_mask=attention_mask
-				)[0] #batch, len_text, dim
+				)[0]  # batch, len_text, dim
 		else:
 			encoder_hidden_states = self.text_encoder(
 				input_ids=input_ids, attention_mask=attention_mask
 			)[0]
-		boolean_encoder_mask = (attention_mask == 1).to(device) ##batch, len_text
+		boolean_encoder_mask = (attention_mask == 1).to(device)  # batch, len_text
 		return encoder_hidden_states, boolean_encoder_mask
 
-	def encode_beats(self, beats): 
+	def encode_beats(self, beats):
 		# device = self.beat_embedding_layer.device
 		out_beat = []
 		out_beat_timing = []
 		out_mask = []
 		for beat in beats:
-			tokenized_beats,tokenized_beats_timing, tokenized_beat_mask = self.beat_tokenizer(beat)
+			tokenized_beats, tokenized_beats_timing, tokenized_beat_mask = self.beat_tokenizer(beat)
 			out_beat.append(tokenized_beats)
 			out_beat_timing.append(tokenized_beats_timing)
 			out_mask.append(tokenized_beat_mask)
-		out_beat, out_beat_timing, out_mask = torch.tensor(out_beat).cuda(), torch.tensor(out_beat_timing).cuda(), torch.tensor(out_mask).cuda() #batch, len_beat
+   		# batch, len_beat
+		out_beat, out_beat_timing, out_mask = torch.tensor(out_beat).cuda(), torch.tensor(out_beat_timing).cuda(), torch.tensor(out_mask).cuda()  
 		embedded_beat = self.beat_embedding_layer(out_beat, out_beat_timing)
 
 		return embedded_beat, out_mask
 
-	def encode_chords(self, chords,chords_time):
+	def encode_chords(self, chords, chords_time):
 		out_chord_root = []
 		out_chord_type = []
 		out_chord_inv = []
 		out_chord_timing = []
 		out_mask = []
-		for chord, chord_time in zip(chords,chords_time): #batch loop
+		for chord, chord_time in zip(chords, chords_time):  # batch loop
 			tokenized_chord_root, tokenized_chord_type, tokenized_chord_inv, tokenized_chord_time, tokenized_chord_mask = self.chord_tokenizer(chord, chord_time)
 			out_chord_root.append(tokenized_chord_root)
 			out_chord_type.append(tokenized_chord_type)
 			out_chord_inv.append(tokenized_chord_inv)
 			out_chord_timing.append(tokenized_chord_time)
 			out_mask.append(tokenized_chord_mask)
-		#chords: (B, LEN, 4)
-		out_chord_root, out_chord_type, out_chord_inv, out_chord_timing, out_mask = torch.tensor(out_chord_root).cuda(), torch.tensor(out_chord_type).cuda(), torch.tensor(out_chord_inv).cuda(), torch.tensor(out_chord_timing).cuda(), torch.tensor(out_mask).cuda()
+		# chords: (B, LEN, 4)
+		out_chord_root, out_chord_type, out_chord_inv, out_chord_timing, out_mask = torch.tensor(out_chord_root).cuda(), torch.tensor(
+		    out_chord_type).cuda(), torch.tensor(out_chord_inv).cuda(), torch.tensor(out_chord_timing).cuda(), torch.tensor(out_mask).cuda()
 		embedded_chord = self.chord_embedding_layer(out_chord_root, out_chord_type, out_chord_inv, out_chord_timing)
 		return embedded_chord, out_mask
 		# return out_chord_root, out_mask
 
-
-	def forward(self, latents, prompt, beats, chords,chords_time, validation_mode=False):
+	def forward(self, latents, prompt, beats, chords, chords_time, validation_mode=False):
 		device = self.text_encoder.device
 		num_train_timesteps = self.noise_scheduler.num_train_timesteps
 		self.noise_scheduler.set_timesteps(num_train_timesteps, device=device)
 
 		encoder_hidden_states, boolean_encoder_mask = self.encode_text(prompt)
-		
-		# with torch.no_grad():
-		encoded_beats, beat_mask = self.encode_beats(beats) #batch, len_beats, dim; batch, len_beats
-		encoded_chords, chord_mask = self.encode_chords(chords,chords_time)
 
+		# with torch.no_grad():
+		encoded_beats, beat_mask = self.encode_beats(beats)  # batch, len_beats, dim; batch, len_beats
+		encoded_chords, chord_mask = self.encode_chords(chords, chords_time)
 
 		if self.uncondition:
 			mask_indices = [k for k in range(len(prompt)) if random.random() < 0.1]
@@ -493,8 +493,7 @@ class MusicAudioDiffusion(nn.Module):
 			timesteps = (self.noise_scheduler.num_train_timesteps//2) * torch.ones((bsz,), dtype=torch.int64, device=device)
 		else:
 			timesteps = torch.randint(0, self.noise_scheduler.num_train_timesteps, (bsz,), device=device)
-		
-		
+
 		timesteps = timesteps.long()
 
 		noise = torch.randn_like(latents)
@@ -512,14 +511,14 @@ class MusicAudioDiffusion(nn.Module):
 			# model_pred = torch.zeros((bsz,8,256,16)).to(device)
 			model_pred = self.unet(
 				noisy_latents, timesteps, encoder_hidden_states, encoded_beats, encoded_chords,
-				encoder_attention_mask=boolean_encoder_mask, beat_attention_mask = beat_mask, chord_attention_mask = chord_mask
+				encoder_attention_mask=boolean_encoder_mask, beat_attention_mask=beat_mask, chord_attention_mask=chord_mask
 			).sample
 
 		elif self.set_from == "pre-trained":
-			compressed_latents = self.group_in(noisy_latents.permute(0, 2, 3, 1).contiguous()).permute(0, 3, 1, 2).contiguous()
+			compressed_latents = self.group_in(
+       			noisy_latents.permute(0, 2, 3, 1).contiguous()).permute(0, 3, 1, 2).contiguous()
 			model_pred = self.unet(
-				compressed_latents, timesteps, encoder_hidden_states, 
-				encoder_attention_mask=boolean_encoder_mask
+       			compressed_latents, timesteps, encoder_hidden_states, encoder_attention_mask=boolean_encoder_mask
 			).sample
 			model_pred = self.group_out(model_pred.permute(0, 2, 3, 1).contiguous()).permute(0, 3, 1, 2).contiguous()
 
@@ -539,15 +538,29 @@ class MusicAudioDiffusion(nn.Module):
 		return loss
 
 	@torch.no_grad()
-	def inference(self, prompt, beats, chords,chords_time, inference_scheduler, num_steps=20, guidance_scale=3, num_samples_per_prompt=1, 
-				  disable_progress=True):
+	def inference(
+     	self, 
+      	prompt, 
+       	beats, 
+        chords, 
+        chords_time, 
+        inference_scheduler, 
+        num_steps=20, 
+        guidance_scale=3, 
+        num_samples_per_prompt=1,		  
+      	disable_progress=True, 
+       	leading_latents=None, 
+        clip_ratio=0.375,
+        tail_ratio=0.125,
+    ):
 		device = self.text_encoder.device
 		classifier_free_guidance = guidance_scale > 1.0
 		batch_size = len(prompt) * num_samples_per_prompt
 
 		if classifier_free_guidance:
 			prompt_embeds, boolean_prompt_mask = self.encode_text_classifier_free(prompt, num_samples_per_prompt)
-			encoded_beats, beat_mask = self.encode_beats_classifier_free(beats, num_samples_per_prompt) #batch, len_beats, dim; batch, len_beats
+   			# batch, len_beats, dim; batch, len_beats
+			encoded_beats, beat_mask = self.encode_beats_classifier_free(beats, num_samples_per_prompt)  
 			encoded_chords, chord_mask = self.encode_chords_classifier_free(chords, chords_time, num_samples_per_prompt)
 		else:
 			prompt_embeds, boolean_prompt_mask = self.encode_text(prompt)
@@ -558,7 +571,7 @@ class MusicAudioDiffusion(nn.Module):
 			encoded_beats = encoded_beats.repeat_interleave(num_samples_per_prompt, 0)
 			beat_mask = beat_mask.repeat_interleave(num_samples_per_prompt, 0)
 
-			encoded_chords, chord_mask = self.encode_chords(chords,chords_time)
+			encoded_chords, chord_mask = self.encode_chords(chords, chords_time)
 			encoded_chords = encoded_chords.repeat_interleave(num_samples_per_prompt, 0)
 			chord_mask = chord_mask.repeat_interleave(num_samples_per_prompt, 0)
 
@@ -567,37 +580,52 @@ class MusicAudioDiffusion(nn.Module):
 		timesteps = inference_scheduler.timesteps
 
 		num_channels_latents = self.unet.in_channels
-		latents = self.prepare_latents(batch_size, inference_scheduler, num_channels_latents, prompt_embeds.dtype, device)
+		latents = self.prepare_latents(
+      		batch_size, inference_scheduler, num_channels_latents, prompt_embeds.dtype, device)
 
 		num_warmup_steps = len(timesteps) - num_steps * inference_scheduler.order
 		progress_bar = tqdm(range(num_steps), disable=disable_progress)
 
+		latent_t_to_out = {}
 		for i, t in enumerate(timesteps):
 			# expand the latents if we are doing classifier free guidance
 			latent_model_input = torch.cat([latents] * 2) if classifier_free_guidance else latents
 			latent_model_input = inference_scheduler.scale_model_input(latent_model_input, t)
 
 			noise_pred = self.unet(
-				latent_model_input, t, encoder_hidden_states=prompt_embeds,
-				encoder_attention_mask=boolean_prompt_mask, 
-				beat_features = encoded_beats, beat_attention_mask = beat_mask, chord_features = encoded_chords,chord_attention_mask = chord_mask
+				latent_model_input, t, 
+    			encoder_hidden_states=prompt_embeds,
+				encoder_attention_mask=boolean_prompt_mask,
+    			beat_features=encoded_beats, 
+       			beat_attention_mask=beat_mask,
+          		chord_features=encoded_chords,
+            	chord_attention_mask=chord_mask
 			).sample
 
 			# perform guidance
 			if classifier_free_guidance: #should work for beats and chords too
 				noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
 				noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
+        
+			if leading_latents is not None:
+				# simple trick. the pasted (partial) latent (at t-step) guides conherent generation in remained part. 
+				copy_start = int(latents.shape[2] * clip_ratio)
+				tail_length = int(latents.shape[2] * tail_ratio)
+				ref_latents = leading_latents[t.item()]
+				latents[:, :, :copy_start] = ref_latents[:, :, - copy_start - tail_length: - tail_length]
 
 			# compute the previous noisy sample x_t -> x_t-1
 			latents = inference_scheduler.step(noise_pred, t, latents).prev_sample
+			latent_t_to_out[t.item()] = latents
 
-			# call the callback, if provided
+            # call the callback, if provided
 			if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and (i + 1) % inference_scheduler.order == 0):
 				progress_bar.update(1)
 
 		if self.set_from == "pre-trained":
 			latents = self.group_out(latents.permute(0, 2, 3, 1).contiguous()).permute(0, 3, 1, 2).contiguous()
-		return latents
+
+		return latents, latent_t_to_out
 
 	def prepare_latents(self, batch_size, inference_scheduler, num_channels_latents, dtype, device):
 		shape = (batch_size, num_channels_latents, 256, 16)
