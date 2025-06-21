@@ -552,6 +552,7 @@ class MusicAudioDiffusion(nn.Module):
        	leading_latents=None, 
         clip_ratio=0.375,
         tail_ratio=0.125,
+        return_latent_t_dict=False
     ):
 		device = self.text_encoder.device
 		classifier_free_guidance = guidance_scale > 1.0
@@ -625,7 +626,7 @@ class MusicAudioDiffusion(nn.Module):
 		if self.set_from == "pre-trained":
 			latents = self.group_out(latents.permute(0, 2, 3, 1).contiguous()).permute(0, 3, 1, 2).contiguous()
 
-		return latents, latent_t_to_out
+		return latents, latent_t_to_out if return_latent_t_dict else latents
 
 	def prepare_latents(self, batch_size, inference_scheduler, num_channels_latents, dtype, device):
 		shape = (batch_size, num_channels_latents, 256, 16)
