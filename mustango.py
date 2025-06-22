@@ -223,7 +223,7 @@ class Mustango:
 
         return wave[0], latent_t_dict if return_latent_t_dict else wave[0]
     
-    def generate_longer(self, prompt, n_secs, include_ending=True, return_slices=True):
+    def generate_longer(self, prompt, n_secs, return_slices=True):
         # step.1 compute length
         DEFAULT_LENGTH = 10  # do NOT change, original generated length.
         SLICE_GEN_LENGTH = 5  # may not change (requires corresponded modification to `clip_ratio`)
@@ -245,7 +245,6 @@ class Mustango:
                 musics.append(music[:len(music) // DEFAULT_LENGTH * SLICE_GEN_LENGTH])
             else:
                 if _clip_ratio is None:
-                    prompt = 'An ending part of music.' + prompt
                     music, leading_latents = self.generate(
                         prompt=prompt, leading_latents=leading_latents, return_latent_t_dict=True)
                     musics.append(music)
@@ -255,8 +254,6 @@ class Mustango:
                     musics.append(music[:int(len(music) * total_diff / DEFAULT_LENGTH)])
         
         if _clip_ratio is not None:
-            if include_ending:
-                prompt = 'An ending part of music.' + prompt
             music, _ = self.generate(prompt=prompt, leading_latents=leading_latents, return_latent_t_dict=True)
             musics.append(music)
             
