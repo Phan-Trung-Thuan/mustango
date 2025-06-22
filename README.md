@@ -30,7 +30,8 @@ There is an orchestra performing the piece with a violin lead playing the main m
 The atmosphere is sentimental and heart-touching.
 This piece could be playing in the background at a classy restaurant.
 The chord progression in this song is Am7, Gm, Dm, A7, Dm.
-The beat is 3. This song is in Largo. The key of this song is D minor."""
+The beat is 3. This song is in Largo. The key of this song is D minor.
+"""
 
 # You can pass arbitrary duration (in secs) to the model. 
 # (sure it takes longer to generate, as a ref: ~11mins for 1min music on my 7900xtx).
@@ -39,9 +40,9 @@ IPython.display.Audio(data=music, rate=16000)
 ```
 ### 🎵 Demo Audio
 Here are two demos (all generated at once, no cherry-picking):
-- Prompt: *"This techno song features a synth lead playing the main melody. This is accompanied by programmed percussion playing a simple kick focused beat. The hi-hat is accented in an open position on the 3-and count of every bar. The synth plays the bass part with a voicing that sounds like a cello. This techno song can be played in a club. The chord sequence is Gm, A7, Eb, Bb, C, F, Gm. The beat counts to 2. The tempo of this song is 128.0 beats per minute. The key of this song is G minor."*  🎧 [Click here to the audio file](assets/demo_audio/demo_1_techno_song.wav)
-- Prompt: *"This is a live performance of a classical music piece. There is an orchestra performing the piece with a violin lead playing the main melody. The atmosphere is sentimental and heart-touching. This piece could be playing in the background at a classy restaurant. The chord progression in this song is Am7, Gm, Dm, A7, Dm. The beat is 3. This song is in Largo. The key of this song is D minor."* 🎧 [Click here to the audio file](assets/demo_audio/demo_2_classical_music.wav)
-- Check `assets/demo_audio` folder for more!
+- Prompt: *"This techno song features a synth lead playing the main melody. This is accompanied by programmed percussion playing a simple kick focused beat. The hi-hat is accented in an open position on the 3-and count of every bar. The synth plays the bass part with a voicing that sounds like a cello. This techno song can be played in a club. The chord sequence is Gm, A7, Eb, Bb, C, F, Gm. The beat counts to 2. The tempo of this song is 128.0 beats per minute. The key of this song is G minor."*  🎧 [Link to the audio file](assets/demo_audio/demo_1_techno_song.wav)
+- Prompt: *"This is a live performance of a classical music piece. There is an orchestra performing the piece with a violin lead playing the main melody. The atmosphere is sentimental and heart-touching. This piece could be playing in the background at a classy restaurant. The chord progression in this song is Am7, Gm, Dm, A7, Dm. The beat is 3. This song is in Largo. The key of this song is D minor."* 🎧 [Link to the audio file](assets/demo_audio/demo_2_classical_music.wav)
+- Check [assets/demo_audio](assets/demo_audio) folder for more!
 ###  ❔ How It Works?
 <div align="center">
   <img src="img/method_illustration.png" width="700"/>
