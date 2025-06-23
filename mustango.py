@@ -223,7 +223,7 @@ class Mustango:
 
         return wave[0], latent_t_dict if return_latent_t_dict else wave[0]
     
-    def generate_longer(self, prompt: str, n_secs: int, return_slices: bool = True):
+    def generate_longer(self, prompt: str, n_secs: int, t_err=0.1, return_slices: bool = True):
         # step.1 compute length
         DEFAULT_LENGTH = 10.242   # do NOT change, original generated length.
         SLICE_GEN_LENGTH = 5.121  # may not change (requires corresponded modification to `clip_ratio`)
@@ -231,8 +231,10 @@ class Mustango:
         
         n_full_length_runs = int((n_secs - DEFAULT_LENGTH) // SLICE_GEN_LENGTH) + 1
         total_diff = n_secs - (n_full_length_runs - 1) * SLICE_GEN_LENGTH - DEFAULT_LENGTH
+        
         _clip_ratio = None
-        if total_diff > 1:
+        if total_diff > t_err:
+            # when time gap > acceptable error
             _clip_ratio = (DEFAULT_LENGTH - total_diff) / DEFAULT_LENGTH - DROP_TAIL
 
         # step.2 coherent gen
