@@ -741,8 +741,8 @@ class MusicAudioDiffusion(nn.Module):
                 out_beat_unc.append(tokenized_beats)
                 out_beat_timing_unc.append(tokenized_beats_timing)
                 out_mask_unc.append(tokenized_beat_mask)
-            out_beat_unc torch.tensor(out_beat_unc).cuda()
-            out_beat_timing_unc torch.tensor(out_beat_timing_unc).cuda()
+            out_beat_unc = torch.tensor(out_beat_unc).cuda()
+            out_beat_timing_unc = torch.tensor(out_beat_timing_unc).cuda()
             out_mask_unc = torch.tensor(out_mask_unc).cuda()  #batch, len_beat
             embedded_beat_unc = self.beat_embedding_layer(out_beat_unc, out_beat_timing_unc)
 
