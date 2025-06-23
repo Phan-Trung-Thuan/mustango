@@ -35,6 +35,8 @@ The beat is 3. This song is in Largo. The key of this song is D minor.
 
 # You can pass arbitrary duration (in secs) to the model. 
 # (sure it takes longer to generate, as a ref: ~11mins for 1min music on my 7900xtx).
+# n_slices_gen ≈ 1 + ceil(（t - 10） / 5)， t_to_gen = n_slices_gen * t_single_run
+# it can be faster, but that would be an efficiency-consisteny trade-off.
 music, slices = model.generate_longer(prompt, n_secs=60)  
 IPython.display.Audio(data=music, rate=16000)
 ```
