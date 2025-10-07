@@ -1,4 +1,5 @@
 import json
+import gc
 import torch
 import numpy as np
 from huggingface_hub import snapshot_download
@@ -141,41 +142,42 @@ class Mustango:
         local_files_only=False,
     ):
         path = snapshot_download(repo_id=name, cache_dir=cache_dir)
+        self.device = device
 
         self.music_model = MusicFeaturePredictor(
-            path, device, cache_dir=cache_dir, local_files_only=local_files_only
+            path, 'cpu', cache_dir=cache_dir, local_files_only=local_files_only
         )
 
         vae_config = json.load(open(f"{path}/configs/vae_config.json"))
-        stft_config = json.load(open(f"{path}/configs/stft_config.json"))
+        # stft_config = json.load(open(f"{path}/configs/stft_config.json"))
         main_config = json.load(open(f"{path}/configs/main_config.json"))
 
-        self.vae = AutoencoderKL(**vae_config).to(device)
-        self.stft = TacotronSTFT(**stft_config).to(device)
+        self.vae = AutoencoderKL(**vae_config)
+        # self.stft = TacotronSTFT(**stft_config)
         self.model = MusicAudioDiffusion(
             main_config["text_encoder_name"],
             main_config["scheduler_name"],
             unet_model_config_path=f"{path}/configs/music_diffusion_model_config.json",
-        ).to(device)
+        )
 
         vae_weights = torch.load(
-            f"{path}/vae/pytorch_model_vae.bin", map_location=device
+            f"{path}/vae/pytorch_model_vae.bin", map_location='cpu'
         )
-        stft_weights = torch.load(
-            f"{path}/stft/pytorch_model_stft.bin", map_location=device
-        )
+        # stft_weights = torch.load(
+        #     f"{path}/stft/pytorch_model_stft.bin", map_location='cpu'
+        # )
         main_weights = torch.load(
-            f"{path}/ldm/pytorch_model_ldm.bin", map_location=device
+            f"{path}/ldm/pytorch_model_ldm.bin", map_location='cpu'
         )
 
         self.vae.load_state_dict(vae_weights)
-        self.stft.load_state_dict(stft_weights)
+        # self.stft.load_state_dict(stft_weights)
         self.model.load_state_dict(main_weights)
 
         print("Successfully loaded checkpoint from:", name)
 
         self.vae.eval()
-        self.stft.eval()
+        # self.stft.eval()
         self.model.eval()
 
         self.scheduler = DDPMScheduler.from_pretrained(
@@ -197,8 +199,14 @@ class Mustango:
         """Genrate music for a single prompt string."""
 
         with torch.no_grad():
-            beats, chords, chords_times = self.music_model.generate(prompt)
-            out = self.model.inference(
+            music_model = self.music_model.to(self.device)
+            beats, chords, chords_times = music_model.generate(prompt)
+            del music_model
+            gc.collect()
+            torch.cuda.empty_cache()
+
+            model = self.model.to(self.device)
+            out = model.inference(
                 [prompt],
                 beats,
                 [chords],
@@ -213,17 +221,27 @@ class Mustango:
                 tail_ratio=tail_ratio,
                 return_latent_t_dict=return_latent_t_dict
             )
+            del model
+            gc.collect()
+            torch.cuda.empty_cache()
+
             if return_latent_t_dict:
                 latents, latent_t_dict = out
             else:
                 latents = out
             
-            mel = self.vae.decode_first_stage(latents)
-            wave = self.vae.decode_to_waveform(mel)
+            vae = self.vae.to(self.device)
+
+            mel = vae.decode_first_stage(latents)
+            wave = vae.decode_to_waveform(mel)
+
+            del vae
+            gc.collect()
+            torch.cuda.empty_cache()
 
         return wave[0], latent_t_dict if return_latent_t_dict else wave[0]
     
-    def generate_longer(self, prompt: str, n_secs: int, t_err=0.1, return_slices: bool = True):
+    def generate_longer(self, prompt: str, n_secs: int, t_err=0.1, return_slices: bool = False):
         # step.1 compute length
         DEFAULT_LENGTH = 10.242   # do NOT change, original generated length.
         SLICE_GEN_LENGTH = 5.121  # may not change (requires corresponded modification to `clip_ratio`)
