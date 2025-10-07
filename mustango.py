@@ -203,9 +203,9 @@ class Mustango:
         """Genrate music for a single prompt string."""
 
         with torch.no_grad():
-            music_model = self.music_model.to(self.device)
-            beats, chords, chords_times = music_model.generate(prompt)
-            del music_model
+            self.music_model.to(self.device)
+            beats, chords, chords_times = self.music_model.generate(prompt)
+            self.music_model.to('cpu')
             gc.collect()
             torch.cuda.empty_cache()
 
