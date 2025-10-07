@@ -49,6 +49,10 @@ class MusicFeaturePredictor:
         chords_weight = torch.load(chords_ckpt, map_location="cpu")
         self.chords_model.load_state_dict(chords_weight)
 
+    def to(self, device='cpu'):
+        self.beats_model = self.beats_model.to(device)
+        self.chords_model = self.chords_model.to(device)
+
     def generate_beats(self, prompt):
         tokenized = self.beats_tokenizer(
             prompt, max_length=512, padding=True, truncation=True, return_tensors="pt"
