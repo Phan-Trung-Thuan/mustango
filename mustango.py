@@ -1,6 +1,7 @@
 import json
 import gc
 import torch
+from tqdm import tqdm
 import numpy as np
 from huggingface_hub import snapshot_download
 
@@ -262,7 +263,7 @@ class Mustango:
         # step.2 coherent gen
         music, leading_latents = self.generate(prompt=prompt, leading_latents=None, return_latent_t_dict=True)
         musics = [music[:int(len(music) / DEFAULT_LENGTH * SLICE_GEN_LENGTH)]]
-        for i in range(n_full_length_runs - 1):            
+        for i in tqdm(range(n_full_length_runs - 1)):            
             if i < n_full_length_runs - 2:
                 music, leading_latents = self.generate(
                     prompt=prompt, leading_latents=leading_latents, return_latent_t_dict=True)
