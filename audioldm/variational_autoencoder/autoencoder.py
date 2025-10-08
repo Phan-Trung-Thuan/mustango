@@ -121,7 +121,8 @@ class AutoencoderKL(nn.Module):
             z = rearrange(z, "b h w c -> b c h w").contiguous()
 
         if not isinstance(z, torch.Tensor):
-            z = torch.tensor(z, dtype=torch.float32, device=self.device if hasattr(self, "device") else "cpu")
+            module_device = next(self.parameters()).device
+            z = torch.tensor(z, dtype=torch.float32, device=module_device)
 
         z = 1.0 / self.scale_factor * z
         return self.decode(z)

@@ -229,10 +229,11 @@ class LatentDiffusion(DDPM):
                 z = torch.argmax(z.exp(), dim=1).long()
             z = self.first_stage_model.quantize.get_codebook_entry(z, shape=None)
             z = rearrange(z, "b h w c -> b c h w").contiguous()
-            
-        if not isinstance(z, torch.Tensor):
-            z = torch.tensor(z, dtype=torch.float32, device=self.device if hasattr(self, "device") else "cpu")
 
+        if not isinstance(z, torch.Tensor):
+            module_device = next(self.parameters()).device
+            z = torch.tensor(z, dtype=torch.float32, device=module_device)
+            
         z = 1.0 / self.scale_factor * z
         return self.first_stage_model.decode(z)
 
