@@ -58,6 +58,10 @@ class AutoencoderKL(nn.Module):
         return posterior
 
     def decode(self, z):
+        if z.dim() == 5:  # [B, C, D, H, W]
+            B, C, D, H, W = z.shape
+            z = z.view(B, C * D, H, W)  # merge D into channels
+
         z = self.post_quant_conv(z)
         dec = self.decoder(z)
         dec = self.freq_merge_subband(dec)
