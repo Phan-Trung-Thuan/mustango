@@ -16,6 +16,7 @@
 
 from collections.abc import Sequence
 from typing import Optional, Tuple, Union
+from dataclasses import dataclass
 
 import torch
 import torch.utils.checkpoint
@@ -1443,6 +1444,7 @@ class DebertaV2ForTokenClassification(DebertaV2PreTrainedModel):
             loss=loss, logits=logits, hidden_states=outputs.hidden_states, attentions=outputs.attentions
         )
     
+@dataclass
 class TokenClassifierRegressionOutput(ModelOutput):
     """
     Base class for outputs of token classification models.
@@ -1466,8 +1468,8 @@ class TokenClassifierRegressionOutput(ModelOutput):
     """
 
     loss: Optional[torch.FloatTensor] = None
-    logits: torch.FloatTensor = None
-    values: torch.FloatTensor = None
+    logits: Optional[torch.FloatTensor] = None
+    values: Optional[torch.FloatTensor] = None
     hidden_states: Optional[Tuple[torch.FloatTensor]] = None
     attentions: Optional[Tuple[torch.FloatTensor]] = None
     
