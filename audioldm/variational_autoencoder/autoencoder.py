@@ -120,6 +120,9 @@ class AutoencoderKL(nn.Module):
             z = self.first_stage_model.quantize.get_codebook_entry(z, shape=None)
             z = rearrange(z, "b h w c -> b c h w").contiguous()
 
+        print(z)
+        print(type(z))
+        
         if not isinstance(z, torch.Tensor):
             module_device = next(self.parameters()).device
             z = torch.tensor(z, dtype=torch.float32, device=module_device)
