@@ -129,9 +129,10 @@ class MusicFeaturePredictor:
             clean_up_tokenization_spaces=True,
         ).split(" n ")
 
+        print(generated_chords)
+
         predicted_chords, predicted_chords_times = [], []
         for item in generated_chords:
-            print(item, end='\t')
             c, ct = item.split(" at ")
             predicted_chords.append(c)
             predicted_chords_times.append(float(ct))
