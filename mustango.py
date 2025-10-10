@@ -131,6 +131,7 @@ class MusicFeaturePredictor:
 
         predicted_chords, predicted_chords_times = [], []
         for item in generated_chords:
+            print(item, end='\t')
             c, ct = item.split(" at ")
             predicted_chords.append(c)
             predicted_chords_times.append(float(ct))
