@@ -147,11 +147,11 @@ class Mustango:
         )
 
         vae_config = json.load(open(f"{path}/configs/vae_config.json"))
-        stft_config = json.load(open(f"{path}/configs/stft_config.json"))
+        # stft_config = json.load(open(f"{path}/configs/stft_config.json"))
         main_config = json.load(open(f"{path}/configs/main_config.json"))
 
         self.vae = AutoencoderKL(**vae_config).to(device)
-        self.stft = TacotronSTFT(**stft_config).to(device)
+        # self.stft = TacotronSTFT(**stft_config).to(device)
         self.model = MusicAudioDiffusion(
             main_config["text_encoder_name"],
             main_config["scheduler_name"],
@@ -161,21 +161,21 @@ class Mustango:
         vae_weights = torch.load(
             f"{path}/vae/pytorch_model_vae.bin", map_location=device
         )
-        stft_weights = torch.load(
-            f"{path}/stft/pytorch_model_stft.bin", map_location=device
-        )
+        # stft_weights = torch.load(
+        #     f"{path}/stft/pytorch_model_stft.bin", map_location=device
+        # )
         main_weights = torch.load(
             f"{path}/ldm/pytorch_model_ldm.bin", map_location=device
         )
 
         self.vae.load_state_dict(vae_weights)
-        self.stft.load_state_dict(stft_weights)
+        # self.stft.load_state_dict(stft_weights)
         self.model.load_state_dict(main_weights)
 
         print("Successfully loaded checkpoint from:", name)
 
         self.vae.eval()
-        self.stft.eval()
+        # self.stft.eval()
         self.model.eval()
 
         self.scheduler = DDPMScheduler.from_pretrained(
