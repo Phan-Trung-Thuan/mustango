@@ -150,22 +150,22 @@ class Mustango:
         # stft_config = json.load(open(f"{path}/configs/stft_config.json"))
         main_config = json.load(open(f"{path}/configs/main_config.json"))
 
-        self.vae = AutoencoderKL(**vae_config).to(device)
+        self.vae = AutoencoderKL(**vae_config).to('cuda:1')
         # self.stft = TacotronSTFT(**stft_config).to(device)
         self.model = MusicAudioDiffusion(
             main_config["text_encoder_name"],
             main_config["scheduler_name"],
             unet_model_config_path=f"{path}/configs/music_diffusion_model_config.json",
-        ).to(device)
+        ).to('cuda:0')
 
         vae_weights = torch.load(
-            f"{path}/vae/pytorch_model_vae.bin", map_location=device
+            f"{path}/vae/pytorch_model_vae.bin", map_location='cuda:1'
         )
         # stft_weights = torch.load(
         #     f"{path}/stft/pytorch_model_stft.bin", map_location=device
         # )
         main_weights = torch.load(
-            f"{path}/ldm/pytorch_model_ldm.bin", map_location=device
+            f"{path}/ldm/pytorch_model_ldm.bin", map_location='cuda:0'
         )
 
         self.vae.load_state_dict(vae_weights)
@@ -218,6 +218,8 @@ class Mustango:
             else:
                 latents = out
             
+            latents = latents.to('cuda:1')
+            print(latents)
             mel = self.vae.decode_first_stage(latents)
             wave = self.vae.decode_to_waveform(mel)
 
