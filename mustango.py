@@ -143,7 +143,7 @@ class Mustango:
         path = snapshot_download(repo_id=name, cache_dir=cache_dir)
 
         self.music_model = MusicFeaturePredictor(
-            path, device, cache_dir=cache_dir, local_files_only=local_files_only
+            path, 'cuda:1', cache_dir=cache_dir, local_files_only=local_files_only
         )
 
         vae_config = json.load(open(f"{path}/configs/vae_config.json"))
