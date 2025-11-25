@@ -15,6 +15,7 @@
 """ PyTorch DeBERTa-v2 model."""
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Optional, Tuple, Union
 
 import torch
