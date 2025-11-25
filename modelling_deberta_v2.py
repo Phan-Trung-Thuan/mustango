@@ -1443,6 +1443,7 @@ class DebertaV2ForTokenClassification(DebertaV2PreTrainedModel):
             loss=loss, logits=logits, hidden_states=outputs.hidden_states, attentions=outputs.attentions
         )
     
+@dataclass
 class TokenClassifierRegressionOutput(ModelOutput):
     """
     Base class for outputs of token classification models.
