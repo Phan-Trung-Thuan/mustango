@@ -189,7 +189,7 @@ class Mustango:
         guidance=3, 
         samples=1, 
         disable_progress=True, 
-        return_latent_t_dict=False, 
+        return_latent_t_dict=True, 
         leading_latents=None, 
         clip_ratio=0.375,
         tail_ratio=0.125,
